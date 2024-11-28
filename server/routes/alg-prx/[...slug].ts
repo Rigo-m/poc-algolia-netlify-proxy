@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
     })
     return responseString
   } catch (e: any) {
+    console.error(e, 'errored here')
     // TODO: handle locking mechanism
     return responseString
   }
