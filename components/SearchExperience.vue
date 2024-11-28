@@ -13,7 +13,7 @@ import algoliasearch, { type AlgoliaSearchOptions } from "algoliasearch";
 
 const config: AlgoliaSearchOptions = import.meta.client ? {
   hosts: [{
-    url: `${location.host}/algolia-proxy`,
+    url: `${location.host}/alg-prx`,
     protocol: 'https'
   }]
 } : {}
