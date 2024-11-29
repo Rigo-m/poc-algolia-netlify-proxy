@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "nuxt": "NODE_OPTIONS='--no-experimental-fetch' nuxt"
   },
   "dependencies": {
     "@atoms-studio/nuxt-swiftsearch": "0.8.1",
