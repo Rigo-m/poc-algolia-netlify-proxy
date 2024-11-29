@@ -13,5 +13,10 @@ export default defineNuxtConfig({
         'Netlify-CDN-Cache-Control': 'public,s-maxage=7200,durable,must-revalidate'
       }
     }
+  },
+  nitro: {
+    experimental: {
+      nodeFetchCompat: true
+    }
   }
 })
