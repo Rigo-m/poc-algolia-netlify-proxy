@@ -8,13 +8,18 @@ export default defineNuxtConfig({
       proxy: {
         to: 'https://latency-dsn.algolia.net/**'
       },
-      headers: {
-        'Cache-Control': 'public,max-age=0,must-revalidate',
-        'Netlify-CDN-Cache-Control': 'public,s-maxage=7200,durable,must-revalidate'
+      cache: {
+        base: 'algolia',
+        maxAge: 7200
       }
     }
   },
   nitro: {
+    storage: {
+      cache: {
+        driver: "memory"
+      }
+    },
     experimental: {
       nodeFetchCompat: true
     }
