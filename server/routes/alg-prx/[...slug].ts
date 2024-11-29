@@ -40,6 +40,7 @@ export default defineEventHandler(async (event) => {
 
   // end of cachign logic
   const proxyTarget = joinURL('https://latency-dsn.algolia.net', slug!) + `?${query}`
+  console.log('proxy target', proxyTarget)
   let responseString
   try {
     const resp = await proxyRequest(event, proxyTarget, {
