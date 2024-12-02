@@ -27,7 +27,6 @@ async function readableStreamToString(readableStream: any) {
 }
 
 export default defineEventHandler(async (event) => {
-  console.log(process.version, 'node version')
   // proxying to algolia
   const slug = getRouterParam(event, 'slug')
   const query = stringifyQuery(getQuery(event))
@@ -39,12 +38,14 @@ export default defineEventHandler(async (event) => {
     return await storage.getItem(stringifiedBody)
   }
 
+  console.log(storage.getKeys(), 'keys')
+
   // end of cachign logic
   const proxyTarget = joinURL('https://latency-dsn.algolia.net', slug!) + `?${query}`
   console.log('proxy target', proxyTarget)
   let responseString
   try {
-    const resp = await proxyRequest(event, proxyTarget, {
+    await proxyRequest(event, proxyTarget, {
       async onResponse(evt, response) {
         const resp = await readableStreamToString(response.body)
 
@@ -52,6 +53,11 @@ export default defineEventHandler(async (event) => {
           console.error(e, 'storage error')
         })
         responseString = resp
+      },
+      headers: {
+        'content-type': undefined,
+        'content-disposition': undefined,
+        'content-length': undefined
       }
     })
     return responseString
