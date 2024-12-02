@@ -27,6 +27,7 @@ async function readableStreamToString(readableStream: any) {
 }
 
 export default defineEventHandler(async (event) => {
+  console.log(process.version)
   // proxying to algolia
   const slug = getRouterParam(event, 'slug')
   const query = stringifyQuery(getQuery(event))
