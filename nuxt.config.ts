@@ -9,8 +9,9 @@ export default defineNuxtConfig({
         to: 'https://latency-dsn.algolia.net/**'
       },
       cache: {
+        name: 'test',
         base: 'algolia',
-        maxAge: 7200
+        maxAge: 7200,
       }
     }
   },
