@@ -26,8 +26,43 @@ async function readableStreamToString(readableStream: any) {
   return decoder.decode(combinedArray);
 }
 
+function mergeHeaders(
+  defaults: HeadersInit,
+  ...inputs: (HeadersInit | undefined)[]
+) {
+  const _inputs = inputs.filter(Boolean) as HeadersInit[];
+  if (_inputs.length === 0) {
+    return defaults;
+  }
+  const merged = new Headers(defaults);
+  for (const input of _inputs) {
+    for (const [key, value] of Object.entries(input!)) {
+      if (value !== undefined) {
+        merged.set(key, value);
+      }
+    }
+  }
+  return merged;
+}
+
+
+async function customProxy(event, target, opts) {
+  const body = await readRawBody(event, false).catch(() => undefined)
+  const method = event.method
+  const headers = getProxyRequestHeaders(event)
+  delete headers['content-length']
+
+  return sendProxy(event, target, {
+    ...opts,
+    fetchOptions: {
+      method,
+      body,
+      ...opts.fetchOptions,
+      headers: headers,
+    },
+  });
+}
 export default defineEventHandler(async (event) => {
-  console.log(process.version)
   // proxying to algolia
   const slug = getRouterParam(event, 'slug')
   const query = stringifyQuery(getQuery(event))
@@ -46,7 +81,7 @@ export default defineEventHandler(async (event) => {
   console.log('proxy target', proxyTarget)
   let responseString
   try {
-    await proxyRequest(event, proxyTarget, {
+    await customProxy(event, proxyTarget, {
       async onResponse(evt, response) {
         const resp = await readableStreamToString(response.body)
 
@@ -56,9 +91,6 @@ export default defineEventHandler(async (event) => {
         responseString = resp
       },
       headers: {
-        'content-type': undefined,
-        'content-disposition': undefined,
-        'content-length': undefined
       }
     })
     return responseString
