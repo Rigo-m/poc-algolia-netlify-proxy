@@ -48,6 +48,7 @@ function mergeHeaders(
 
 async function customProxy(event, target, opts) {
   const body = await readRawBody(event, false).catch(() => undefined)
+  console.log("req body", body)
   const method = event.method
   const headers = getProxyRequestHeaders(event)
   delete headers['content-length']
@@ -67,12 +68,11 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   const query = stringifyQuery(getQuery(event))
   // Caching logic
-  const stringifiedBody = JSON.stringify(await readBody(event))
 
-  if (await storage.hasItem(stringifiedBody)) {
-    console.log('reading from cache')
-    return await storage.getItem(stringifiedBody)
-  }
+  // if (await storage.hasItem(stringifiedBody)) {
+  //   console.log('reading from cache')
+  //   return await storage.getItem(stringifiedBody)
+  // }
 
   console.log(storage.getKeys(), 'keys')
 
@@ -85,9 +85,9 @@ export default defineEventHandler(async (event) => {
       async onResponse(evt, response) {
         const resp = await readableStreamToString(response.body)
 
-        await storage.setItem(stringifiedBody, resp).catch(e => {
-          console.error(e, 'storage error')
-        })
+        // await storage.setItem(stringifiedBody, resp).catch(e => {
+        //   console.error(e, 'storage error')
+        // })
         responseString = resp
       },
       headers: {
