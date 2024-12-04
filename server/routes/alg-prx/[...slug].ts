@@ -1,8 +1,10 @@
 import { joinURL, stringifyQuery } from 'ufo'
 import { createStorage } from 'unstorage'
 
+// TODO: change with appropriate one
 const storage = createStorage()
 
+// convert response stream to string
 async function readableStreamToString(readableStream: any) {
   const reader = readableStream.getReader();
   const chunks = [];
@@ -26,81 +28,48 @@ async function readableStreamToString(readableStream: any) {
   return decoder.decode(combinedArray);
 }
 
-function mergeHeaders(
-  defaults: HeadersInit,
-  ...inputs: (HeadersInit | undefined)[]
-) {
-  const _inputs = inputs.filter(Boolean) as HeadersInit[];
-  if (_inputs.length === 0) {
-    return defaults;
-  }
-  const merged = new Headers(defaults);
-  for (const input of _inputs) {
-    for (const [key, value] of Object.entries(input!)) {
-      if (value !== undefined) {
-        merged.set(key, value);
-      }
-    }
-  }
-  return merged;
-}
-
-
-async function customProxy(event, target, opts) {
+// custom proxy based on h3 v1 proxy, because it breaks on netlify
+// this fixes UNDICI content length mismatch error
+// and also handles caching logic
+// returns a string
+async function customProxy(event: any, target: string, opts: any) {
+  // get raw body to give to proxy
   const body = await readRawBody(event, false).catch(() => undefined)
-  console.log("req body", body)
+  // get stringified body to act as cache key
+  const strbody = JSON.stringify(await readBody(event))
   const method = event.method
   const headers = getProxyRequestHeaders(event)
+  // delete problematic header
   delete headers['content-length']
-
-  return sendProxy(event, target, {
+  // if stringified body exists as key, return from cache
+  if (await storage.hasItem(strbody)) {
+    console.log('handled by cache')
+    return await storage.getItem(strbody)
+  }
+  let toStringRet
+  await sendProxy(event, target, {
     ...opts,
+    async onResponse(evt: any, response: any) {
+      const resp = await readableStreamToString(response.body)
+      toStringRet = resp
+    },
     fetchOptions: {
       method,
       body,
       ...opts.fetchOptions,
       headers: headers,
     },
-  });
+  }).catch(() => { });
+
+  await storage.setItem(strbody, toStringRet!).catch(e => {
+    console.error(e, 'storage error')
+  })
+  return toStringRet
 }
 export default defineEventHandler(async (event) => {
   // proxying to algolia
   const slug = getRouterParam(event, 'slug')
   const query = stringifyQuery(getQuery(event))
-  // Caching logic
-
-  // if (await storage.hasItem(stringifiedBody)) {
-  //   console.log('reading from cache')
-  //   return await storage.getItem(stringifiedBody)
-  // }
-
-  console.log(storage.getKeys(), 'keys')
-
-  // end of cachign logic
   const proxyTarget = joinURL('https://latency-dsn.algolia.net', slug!) + `?${query}`
-  console.log('proxy target', proxyTarget)
-  let responseString
-  try {
-    await customProxy(event, proxyTarget, {
-      async onResponse(evt, response) {
-        const resp = await readableStreamToString(response.body)
-
-        // await storage.setItem(stringifiedBody, resp).catch(e => {
-        //   console.error(e, 'storage error')
-        // })
-        responseString = resp
-      },
-      headers: {
-      }
-    })
-    console.log({ responseString })
-
-    return responseString
-  } catch (e: any) {
-    console.error(e, 'errored here')
-    // TODO: handle locking mechanism
-    console.log({ responseString })
-
-    return responseString
-  }
+  return await customProxy(event, proxyTarget, {})
 })
