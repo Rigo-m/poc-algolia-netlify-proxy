@@ -93,10 +93,14 @@ export default defineEventHandler(async (event) => {
       headers: {
       }
     })
+    console.log({ responseString })
+
     return responseString
   } catch (e: any) {
     console.error(e, 'errored here')
     // TODO: handle locking mechanism
+    console.log({ responseString })
+
     return responseString
   }
 })
